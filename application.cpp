@@ -28,7 +28,6 @@
 #include "object2D.h"
 #include "object3D.h"
 #include "model3D.h"
-#include "model_manager.h"
 #include "motion_model3D.h"
 #include "mesh.h"
 #include "sphere.h"
@@ -48,7 +47,6 @@ CRenderer *CApplication::m_pRenderer = nullptr;						// レンダラーインスタンス
 CKeyboard *CApplication::m_pKeyboard = {};							// キーボードインスタンス
 CMouse *CApplication::m_pMouse = {};								// マウスインスタンス
 CTexture *CApplication::m_pTexture = nullptr;						// テクスチャインスタンス
-CModelManager *CApplication::m_pModelManager = nullptr;				// モデルマネージャークラス
 CCameraManager *CApplication::m_pCameraManager = nullptr;			// カメラマネージャークラス
 CCamera *CApplication::m_pCamera = nullptr;							// カメラインスタンス
 CApplication::SCENE_MODE CApplication::m_mode = MODE_GAME;			// 現在のモードの格納
@@ -247,7 +245,6 @@ CApplication::~CApplication()
 	assert(m_pKeyboard == nullptr);
 	assert(m_pMouse == nullptr);
 	assert(m_pTexture == nullptr);
-	assert(m_pModelManager == nullptr);
 	assert(m_pCameraManager == nullptr);
 	assert(m_pCamera == nullptr);
 }
@@ -266,7 +263,6 @@ HRESULT CApplication::Init(HINSTANCE hInstance, HWND hWnd)
 	m_pRenderer = new CRenderer;
 	m_pDebugProc = new CDebugProc;
 	m_pTexture = new CTexture;
-	m_pModelManager = new CModelManager;
 	m_pCameraManager = new CCameraManager;
 	m_pCamera = new CCamera;
 
@@ -299,10 +295,6 @@ HRESULT CApplication::Init(HINSTANCE hInstance, HWND hWnd)
 	m_pTexture->Init();
 
 	// 初期化処理
-	assert(m_pModelManager != nullptr);
-	m_pModelManager->Init();
-
-	// 初期化処理
 	assert(m_pCameraManager != nullptr);
 	m_pCameraManager->Init();
 
@@ -329,6 +321,9 @@ HRESULT CApplication::Init(HINSTANCE hInstance, HWND hWnd)
 		return E_FAIL;
 	}
 
+	// モデル情報の初期化
+	CModel3D::InitModel();
+
 	// ライトの作成
 	m_pLight = CLight::Create(D3DXVECTOR3(1.0f, -1.0f, 1.0f), D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
 
@@ -350,6 +345,9 @@ void CApplication::Uninit()
 {
 	// オブジェクトの解放
 	CObject::ReleaseAll(true);
+
+	// モデル情報の終了
+	CModel3D::UninitModel();
 
 	if (m_pRenderer != nullptr)
 	{// 終了処理
@@ -394,15 +392,6 @@ void CApplication::Uninit()
 		// メモリの解放
 		delete m_pTexture;
 		m_pTexture = nullptr;
-	}
-
-	if (m_pModelManager != nullptr)
-	{// 終了処理
-		m_pModelManager->Uninit();
-
-		// メモリの解放
-		delete m_pModelManager;
-		m_pModelManager = nullptr;
 	}
 
 	if (m_pCameraManager != nullptr)

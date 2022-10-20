@@ -19,7 +19,7 @@
 // Author : 唐﨑結斗
 // 概要 : 3Dモデル生成を行うクラス
 //=============================================================================
-class CModel3D : public CObject
+class CModel3D
 {
 public:
 	//--------------------------------------------------------------------
@@ -39,7 +39,12 @@ public:
 	//--------------------------------------------------------------------
 	// 静的メンバ関数
 	//--------------------------------------------------------------------
-	static CModel3D *Create(const int nModelNam);			// 3Dモデルの生成
+	static CModel3D *Create();										// 3Dモデルの生成
+	static void InitModel();										// モデルの初期化
+	static void UninitModel();										// モデルの終了
+	static void LoadModel(const char *pFileName);					// モデルの読み込み
+	static MODEL_MATERIAL *GetMaterial() { return m_material; }		// マテリアル情報の取得
+	static int GetMaxModel() { return m_nMaxModel; }				// モデル数 
 
 	//--------------------------------------------------------------------
 	// コンストラクタとデストラクタ
@@ -50,21 +55,22 @@ public:
 	//--------------------------------------------------------------------
 	// メンバ関数
 	//--------------------------------------------------------------------
-	HRESULT Init() override;																		// 初期化
-	virtual HRESULT Init(const int nModelNam);														// 初期化
-	void Uninit() override;																			// 終了
-	void Update() override;																			// 更新
-	void Draw() override;																			// 描画
-	void SetPos(const D3DXVECTOR3 &pos) override;													// 位置のセッター
-	void SetPosOld(const D3DXVECTOR3 &posOld) override { m_posOld = posOld; }						// 過去位置のセッター
-	void SetRot(const D3DXVECTOR3 &rot) override;													// 向きのセッター
-	void SetSize(const D3DXVECTOR3 &size) override;													// 大きさのセッター
-	void SetMtxWorld(D3DXMATRIX mtxWorld) { m_mtxWorld = mtxWorld; }								// ワールドマトリックスの設定
-	D3DXVECTOR3 GetPos() override { return m_pos; }													// 位置のゲッター
-	D3DXVECTOR3 GetPosOld()  override { return m_posOld; }											// 過去位置のゲッター
-	D3DXVECTOR3 GetRot()  override { return m_rot; }												// 向きのゲッター
-	D3DXVECTOR3 GetSize()  override { return m_size; }												// 大きさのゲッター
-	D3DXMATRIX GetMtxWorld() { return m_mtxWorld; }													// ワールドマトリックスの取得
+	HRESULT Init();															// 初期化
+	void Uninit();															// 終了
+	void Update();															// 更新
+	void Draw();															// 描画
+	void Draw(D3DXMATRIX mtxParent);										// 描画(オーバーロード)
+	void SetPos(const D3DXVECTOR3 &pos);									// 位置のセッター
+	void SetRot(const D3DXVECTOR3 &rot);									// 向きのセッター
+	void SetSize(const D3DXVECTOR3 &size);									// 大きさのセッター
+	void SetMtxWorld(D3DXMATRIX mtxWorld) { m_mtxWorld = mtxWorld; }		// ワールドマトリックスの設定
+	void SetParent(CModel3D *pParent) { m_pParent = pParent; }				// 親モデルのセッター
+	void SetModelID(const int nModelID) { m_nModelID = nModelID; }			// モデルID
+	D3DXVECTOR3 GetPos() { return m_pos; }									// 位置のゲッター
+	D3DXVECTOR3 GetRot() { return m_rot; }									// 向きのゲッター
+	D3DXVECTOR3 GetSize() { return m_size; }								// 大きさのゲッター
+	D3DXMATRIX GetMtxWorld() { return m_mtxWorld; }							// ワールドマトリックスの取得
+	CModel3D *GetParent() { return m_pParent; }								// 親モデルのゲッター
 
 private:
 	//--------------------------------------------------------------------
@@ -73,14 +79,20 @@ private:
 	void Shadow();		// 影の描画
 
 	//--------------------------------------------------------------------
+	// 静的メンバ変数
+	//--------------------------------------------------------------------
+	static MODEL_MATERIAL	*m_material;		// マテリアル情報
+	static int				m_nMaxModel;		// モデル数			
+
+	//--------------------------------------------------------------------
 	// メンバ変数
 	//--------------------------------------------------------------------
-	MODEL_MATERIAL		m_material;			// マテリアル情報
+	CModel3D			*m_pParent;			// 親モデルの情報
 	D3DXMATRIX			m_mtxWorld;			// ワールドマトリックス
 	D3DXVECTOR3			m_pos;				// 位置
-	D3DXVECTOR3			m_posOld;			// 過去位置
 	D3DXVECTOR3			m_rot;				// 向き
 	D3DXVECTOR3			m_size;				// 大きさ
+	int					m_nModelID;			// モデルID
 };
 
 #endif

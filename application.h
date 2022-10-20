@@ -21,7 +21,6 @@ class CDebugProc;
 class CKeyboard;
 class CMouse;
 class CTexture;
-class CModelManager;
 class CCameraManager;
 class CCamera;
 class CSceneMode;
@@ -58,7 +57,6 @@ public:
 	static CKeyboard *GetKeyboard() { return m_pKeyboard; }								// キーボードのゲッター
 	static CMouse *GetMouse() { return m_pMouse; }										// マウスのゲッター
 	static CTexture *GetTexture() { return m_pTexture; }								// テクスチャのゲッター
-	static CModelManager *GetModelManager() { return m_pModelManager; }					// モデルマネージャーのゲッター
 	static CCameraManager *GetCameraManager() { return m_pCameraManager; }				// カメラマネージャーのゲッター
 	static CCamera *GetCamera() { return m_pCamera; }									// カメラのゲッター
 	static CLight *GetLight() { return m_pLight; }										// ライトの取得
@@ -94,7 +92,6 @@ private:
 	static CKeyboard *m_pKeyboard;				// キーボードクラス
 	static CMouse *m_pMouse;					// マウスクラス
 	static CTexture *m_pTexture;				// テクスチャクラス
-	static CModelManager *m_pModelManager;		// モデルマネージャークラス
 	static CCameraManager *m_pCameraManager;	// カメラマネージャークラス
 	static CCamera *m_pCamera;					// ゲームカメラクラス
 	static SCENE_MODE m_mode;					// 現在のモードの格納

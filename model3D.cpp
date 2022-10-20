@@ -9,6 +9,7 @@
 //*****************************************************************************
 // インクルード
 //*****************************************************************************
+#include <stdio.h>
 #include <assert.h>
 
 #include "model3D.h"
@@ -18,12 +19,18 @@
 #include "texture.h"
 #include "light.h"
 
+//--------------------------------------------------------------------
+// 静的メンバ変数定義
+//--------------------------------------------------------------------
+CModel3D::MODEL_MATERIAL *CModel3D::m_material = nullptr;		// マテリアル情報
+int CModel3D::m_nMaxModel = 0;									// モデル数		
+
 //=============================================================================
 // インスタンス生成
 // Author : 唐﨑結斗
 // 概要 : 3Dモデルを生成する
 //=============================================================================
-CModel3D * CModel3D::Create(const int nModelNam)
+CModel3D * CModel3D::Create()
 {
 	// オブジェクトインスタンス
 	CModel3D *pModel3D = nullptr;
@@ -35,10 +42,152 @@ CModel3D * CModel3D::Create(const int nModelNam)
 	assert(pModel3D != nullptr);
 
 	// 数値の初期化
-	pModel3D->Init(nModelNam);
+	pModel3D->Init();
 
 	// インスタンスを返す
 	return pModel3D;
+}
+
+//=============================================================================
+// モデル情報の初期化
+// Author : 唐﨑結斗
+// 概要 : 読み込んだモデル情報を元に3Dモデルを生成する
+//=============================================================================
+void CModel3D::InitModel()
+{
+	// レンダラーのゲット
+	CRenderer *pRenderer = CApplication::GetRenderer();
+
+	// テクスチャポインタの取得
+	CTexture *pTexture = CApplication::GetTexture();
+
+	// テクスチャ情報の取得
+	CTexture::TEXTURE *pTextureData = pTexture->GetTextureData();
+
+	// デバイスの取得
+	LPDIRECT3DDEVICE9 pDevice = pRenderer->GetDevice();
+
+	// ファイル読み込み
+	LoadModel("data/FILE/data.txt");
+
+	// テクスチャの使用数のゲット
+	int nMaxTex = pTexture->GetMaxTexture();
+
+	for (int nCntModel = 0; nCntModel < m_nMaxModel; nCntModel++)
+	{// Xファイルの読み込み
+		D3DXLoadMeshFromX(&m_material[nCntModel].aFileName[0],
+			D3DXMESH_SYSTEMMEM,
+			pDevice,
+			NULL,
+			&m_material[nCntModel].pBuffer,
+			NULL,
+			&m_material[nCntModel].nNumMat,
+			&m_material[nCntModel].pMesh);
+
+		// マテリアルのテクスチャ情報のメモリ確保
+		m_material[nCntModel].pNumTex = new int[m_material[nCntModel].nNumMat];
+		assert(m_material[nCntModel].pNumTex != nullptr);
+
+		// バッファの先頭ポインタをD3DXMATERIALにキャストして取得
+		D3DXMATERIAL *pMat = (D3DXMATERIAL*)m_material[nCntModel].pBuffer->GetBufferPointer();
+
+		// 各メッシュのマテリアル情報を取得する
+		for (int nCntMat = 0; nCntMat < (int)m_material[nCntModel].nNumMat; nCntMat++)
+		{
+			// マテリアルのテクスチャ情報の初期化
+			m_material[nCntModel].pNumTex[nCntMat] = -1;
+
+			if (pMat[nCntMat].pTextureFilename != NULL)
+			{
+				for (int nCntTexture = 0; nCntTexture < nMaxTex; nCntTexture++)
+				{
+					if (strcmp(pMat[nCntMat].pTextureFilename, pTextureData[nCntTexture].aFileName) == 0)
+					{
+						m_material[nCntModel].pNumTex[nCntMat] = nCntTexture;
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
+//=============================================================================
+// モデル情報の終了
+// Author : 唐﨑結斗
+// 概要 : モデル情報の終了
+//=============================================================================
+void CModel3D::UninitModel()
+{
+	for (int nCnt = 0; nCnt < m_nMaxModel; nCnt++)
+	{
+		// メッシュの破棄
+		if (m_material[nCnt].pMesh != nullptr)
+		{
+			m_material[nCnt].pMesh->Release();
+			m_material[nCnt].pMesh = nullptr;
+		}
+
+		// マテリアルの破棄
+		if (m_material[nCnt].pBuffer != nullptr)
+		{
+			m_material[nCnt].pBuffer->Release();
+			m_material[nCnt].pBuffer = nullptr;
+		}
+
+		// メモリの解放
+		delete[] m_material[nCnt].pNumTex;
+		m_material[nCnt].pNumTex = nullptr;
+	}
+
+	// メモリの解放
+	delete[] m_material;
+	m_material = nullptr;
+}
+
+//=============================================================================
+// Xファイルの読み込み
+// Author : 唐﨑結斗
+// 概要 : Xファイルの読み込みを行う
+//=============================================================================
+void CModel3D::LoadModel(const char *pFileName)
+{
+	// 変数宣言
+	char aStr[128];
+	int nCntModel = 0;
+
+	// ファイルの読み込み
+	FILE *pFile = fopen(pFileName, "r");
+
+	if (pFile != nullptr)
+	{
+		while (fscanf(pFile, "%s", &aStr[0]) != EOF)
+		{// "EOF"を読み込むまで 
+			if (strncmp(&aStr[0], "#", 1) == 0)
+			{// 一列読み込む
+				fgets(&aStr[0], sizeof(aStr), pFile);
+			}
+
+			if (strstr(&aStr[0], "MAX_TYPE") != NULL)
+			{
+				fscanf(pFile, "%s", &aStr[0]);
+				fscanf(pFile, "%d", &m_nMaxModel);
+				m_material = new CModel3D::MODEL_MATERIAL[m_nMaxModel];
+				assert(m_material != nullptr);
+			}
+
+			if (strstr(&aStr[0], "MODEL_FILENAME") != NULL)
+			{
+				fscanf(pFile, "%s", &aStr[0]);
+				fscanf(pFile, "%s", &m_material[nCntModel].aFileName[0]);
+				nCntModel++;
+			}
+		}
+	}
+	else
+	{
+		assert(false);
+	}
 }
 
 //=============================================================================
@@ -48,12 +197,12 @@ CModel3D * CModel3D::Create(const int nModelNam)
 //=============================================================================
 CModel3D::CModel3D()
 {
-	memset(&m_material, 0, sizeof(MODEL_MATERIAL));				// マテリアル情報
+	m_pParent = nullptr;										// 親モデルの情報
 	m_mtxWorld = {};											// ワールドマトリックス
 	m_pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);						// 位置
-	m_posOld = D3DXVECTOR3(0.0f, 0.0f, 0.0f);;					// 過去位置
-	m_rot = D3DXVECTOR3(0.0f, 0.0f, 0.0f);;						// 向き
-	m_size = D3DXVECTOR3(0.0f, 0.0f, 0.0f);;					// 大きさ
+	m_rot = D3DXVECTOR3(0.0f, 0.0f, 0.0f);						// 向き
+	m_size = D3DXVECTOR3(0.0f, 0.0f, 0.0f);						// 大きさ
+	m_nModelID = -1;											// モデルID
 }
 
 //=============================================================================
@@ -74,35 +223,11 @@ CModel3D::~CModel3D()
 HRESULT CModel3D::Init()
 {
 	// メンバ変数の初期化
-	memset(&m_material, 0, sizeof(MODEL_MATERIAL));				// マテリアル情報
-	m_mtxWorld = {};											// ワールドマトリックス
-	m_pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);						// 位置
-	m_posOld = D3DXVECTOR3(0.0f, 0.0f, 0.0f);					// 過去位置
-	m_rot = D3DXVECTOR3(0.0f, 0.0f, 0.0f);						// 向き
-	m_size = D3DXVECTOR3(1.0f, 1.0f, 1.0f);						// 大きさ
-
-	return S_OK;
-}
-
-//=============================================================================
-// 初期化
-// Author : 唐﨑結斗
-// 概要 : 頂点バッファを生成し、メンバ変数の初期値を設定
-//=============================================================================
-HRESULT CModel3D::Init(const int nModelNam)
-{
-	// モデルマネージャークラスの設定
-	CModelManager *pModelManager = CApplication::GetModelManager();
-
-	// メンバ変数の初期化
 	m_pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);					// 位置
-	m_posOld = D3DXVECTOR3(0.0f, 0.0f, 0.0f);				// 過去位置
 	m_rot = D3DXVECTOR3(0.0f, 0.0f, 0.0f);					// 向き
 	m_size = D3DXVECTOR3(1.0f, 1.0f, 1.0f);					// 大きさ
+	m_nModelID = -1;										// モデルID
 
-	// モデルのマテリアル情報の設定
-	m_material = pModelManager->GetModelMateria(nModelNam);
-	
 	return S_OK;
 }
 
@@ -113,8 +238,7 @@ HRESULT CModel3D::Init(const int nModelNam)
 //=============================================================================
 void CModel3D::Uninit()
 {
-	// オブジェクト3Dの解放
-	Release();
+
 }
 
 //=============================================================================
@@ -130,70 +254,161 @@ void CModel3D::Update()
 //=============================================================================
 // 描画
 // Author : 唐﨑結斗
-// 概要 : 2D描画を行う
+// 概要 : 親モデルが指定されてる場合、親のワールドマトリックス元に描画する
 //=============================================================================
 void CModel3D::Draw()
 {
-	// デバイスの取得
-	LPDIRECT3DDEVICE9 pDevice = CApplication::GetRenderer()->GetDevice();
+	if (m_nModelID >= 0
+		&& m_nModelID < m_nMaxModel)
+	{
+		// 親のワールドマトリックス
+		D3DXMATRIX mtxParent = {};
 
-	// テクスチャポインタの取得
-	CTexture *pTexture = CApplication::GetTexture();
+		// デバイスの取得
+		LPDIRECT3DDEVICE9 pDevice = CApplication::GetRenderer()->GetDevice();
 
-	// 計算用マトリックス
-	D3DXMATRIX mtxRot, mtxTrans, mtxScaling;
+		// テクスチャポインタの取得
+		CTexture *pTexture = CApplication::GetTexture();
 
-	// 現在のマテリアル保存用
-	D3DMATERIAL9 matDef;
+		// 計算用マトリックス
+		D3DXMATRIX mtxRot, mtxTrans, mtxScaling;
 
-	// マテリアルデータへのポインタ
-	D3DXMATERIAL *pMat;
+		// 現在のマテリアル保存用
+		D3DMATERIAL9 matDef;
 
-	// ワールドマトリックスの初期化
-	D3DXMatrixIdentity(&m_mtxWorld);											// 行列初期化関数
+		// マテリアルデータへのポインタ
+		D3DXMATERIAL *pMat;
 
-	// サイズの反映
-	D3DXMatrixScaling(&mtxScaling, m_size.x, m_size.y, m_size.z);
-	D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxScaling);					// 行列掛け算関数
+		// ワールドマトリックスの初期化
+		D3DXMatrixIdentity(&m_mtxWorld);											// 行列初期化関数
 
-	// 向きの反映
-	D3DXMatrixRotationYawPitchRoll(&mtxRot, m_rot.y, m_rot.x, m_rot.z);			// 行列回転関数
-	D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxRot);						// 行列掛け算関数 
+		// サイズの反映
+		D3DXMatrixScaling(&mtxScaling, m_size.x, m_size.y, m_size.z);
+		D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxScaling);					// 行列掛け算関数
 
-	// 位置を反映
-	D3DXMatrixTranslation(&mtxTrans, m_pos.x, m_pos.y, m_pos.z);				// 行列移動関数
-	D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxTrans);					// 行列掛け算関数
+		// 向きの反映
+		D3DXMatrixRotationYawPitchRoll(&mtxRot, m_rot.y, m_rot.x, m_rot.z);			// 行列回転関数
+		D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxRot);						// 行列掛け算関数 
 
-	// 影の生成
-	Shadow();
+		// 位置を反映
+		D3DXMatrixTranslation(&mtxTrans, m_pos.x, m_pos.y, m_pos.z);				// 行列移動関数
+		D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxTrans);					// 行列掛け算関数
 
-	// ワールドマトリックスの設定
-	pDevice->SetTransform(D3DTS_WORLD, &m_mtxWorld);
+		if (m_pParent != nullptr)
+		{
+			mtxParent = m_pParent->GetMtxWorld();
 
-	// 現在のマテリアルを保持
-	pDevice->GetMaterial(&matDef);
-
-	if (m_material.pBuffer != nullptr)
-	{// マテリアルデータへのポインタを取得
-		pMat = (D3DXMATERIAL*)m_material.pBuffer->GetBufferPointer();
-
-		for (int nCntMat = 0; nCntMat < (int)m_material.nNumMat; nCntMat++)
-		{// マテリアルの設定
-			pDevice->SetMaterial(&pMat[nCntMat].MatD3D);
-
-			// テクスチャの設定
-			pDevice->SetTexture(0, pTexture->GetTexture(m_material.pNumTex[nCntMat]));
-
-			// モデルパーツの描画
-			m_material.pMesh->DrawSubset(nCntMat);
-
-			// テクスチャの設定
-			pDevice->SetTexture(0, nullptr);
+			// 行列掛け算関数
+			D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxParent);
 		}
-	}
 
-	// 保持していたマテリアルを戻す
-	pDevice->SetMaterial(&matDef);
+		// 影の生成
+		Shadow();
+
+		// ワールドマトリックスの設定
+		pDevice->SetTransform(D3DTS_WORLD, &m_mtxWorld);
+
+		// 現在のマテリアルを保持
+		pDevice->GetMaterial(&matDef);
+
+		if (m_material[m_nModelID].pBuffer != nullptr)
+		{// マテリアルデータへのポインタを取得
+			pMat = (D3DXMATERIAL*)m_material[m_nModelID].pBuffer->GetBufferPointer();
+
+			for (int nCntMat = 0; nCntMat < (int)m_material[m_nModelID].nNumMat; nCntMat++)
+			{// マテリアルの設定
+				pDevice->SetMaterial(&pMat[nCntMat].MatD3D);
+
+				// テクスチャの設定
+				pDevice->SetTexture(0, pTexture->GetTexture(m_material[m_nModelID].pNumTex[nCntMat]));
+
+				// モデルパーツの描画
+				m_material[m_nModelID].pMesh->DrawSubset(nCntMat);
+
+				// テクスチャの設定
+				pDevice->SetTexture(0, nullptr);
+			}
+		}
+
+		// 保持していたマテリアルを戻す
+		pDevice->SetMaterial(&matDef);
+	}
+}
+
+//=============================================================================
+// 描画
+// Author : 唐﨑結斗
+// 概要 : 描画を行う
+//=============================================================================
+void CModel3D::Draw(D3DXMATRIX mtxParent)
+{
+	if (m_nModelID >= 0
+		&& m_nModelID < m_nMaxModel)
+	{
+		// デバイスの取得
+		LPDIRECT3DDEVICE9 pDevice = CApplication::GetRenderer()->GetDevice();
+
+		// テクスチャポインタの取得
+		CTexture *pTexture = CApplication::GetTexture();
+
+		// 計算用マトリックス
+		D3DXMATRIX mtxRot, mtxTrans, mtxScaling;
+
+		// 現在のマテリアル保存用
+		D3DMATERIAL9 matDef;
+
+		// マテリアルデータへのポインタ
+		D3DXMATERIAL *pMat;
+
+		// ワールドマトリックスの初期化
+		D3DXMatrixIdentity(&m_mtxWorld);											// 行列初期化関数
+
+		// サイズの反映
+		D3DXMatrixScaling(&mtxScaling, m_size.x, m_size.y, m_size.z);
+		D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxScaling);					// 行列掛け算関数
+
+		// 向きの反映
+		D3DXMatrixRotationYawPitchRoll(&mtxRot, m_rot.y, m_rot.x, m_rot.z);			// 行列回転関数
+		D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxRot);						// 行列掛け算関数 
+
+		// 位置を反映
+		D3DXMatrixTranslation(&mtxTrans, m_pos.x, m_pos.y, m_pos.z);				// 行列移動関数
+		D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxTrans);					// 行列掛け算関数
+
+		// 行列掛け算関数
+		D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxParent);
+
+		// 影の生成
+		Shadow();
+
+		// ワールドマトリックスの設定
+		pDevice->SetTransform(D3DTS_WORLD, &m_mtxWorld);
+
+		// 現在のマテリアルを保持
+		pDevice->GetMaterial(&matDef);
+
+		if (m_material[m_nModelID].pBuffer != nullptr)
+		{// マテリアルデータへのポインタを取得
+			pMat = (D3DXMATERIAL*)m_material[m_nModelID].pBuffer->GetBufferPointer();
+
+			for (int nCntMat = 0; nCntMat < (int)m_material[m_nModelID].nNumMat; nCntMat++)
+			{// マテリアルの設定
+				pDevice->SetMaterial(&pMat[nCntMat].MatD3D);
+
+				// テクスチャの設定
+				pDevice->SetTexture(0, pTexture->GetTexture(m_material[m_nModelID].pNumTex[nCntMat]));
+
+				// モデルパーツの描画
+				m_material[m_nModelID].pMesh->DrawSubset(nCntMat);
+
+				// テクスチャの設定
+				pDevice->SetTexture(0, nullptr);
+			}
+		}
+
+		// 保持していたマテリアルを戻す
+		pDevice->SetMaterial(&matDef);
+	}
 }
 
 //=============================================================================
@@ -237,7 +452,6 @@ void CModel3D::SetSize(const D3DXVECTOR3 & size)
 void CModel3D::Shadow()
 {
 	// 変数宣言
-	MODEL_MATERIAL	materialShadow = m_material;									// 影のマテリアル情報
 	D3DXMATRIX		mtxShadow = {};													// シャドウマトリックス
 	D3DXPLANE		planeField = {};												// 平面化用変数
 	D3DXVECTOR4		vecLight = D3DXVECTOR4(0.0f, 0.0f, 0.0f, 0.0f);					// ライト方向の逆ベクトル
@@ -275,11 +489,11 @@ void CModel3D::Shadow()
 	// 現在のマテリアルを保持
 	pDevice->GetMaterial(&matDef);
 
-	if (materialShadow.pBuffer != nullptr)
+	if (m_material[m_nModelID].pBuffer != nullptr)
 	{// マテリアルデータへのポインタを取得
-		pMat = (D3DXMATERIAL*)materialShadow.pBuffer->GetBufferPointer();
+		pMat = (D3DXMATERIAL*)m_material[m_nModelID].pBuffer->GetBufferPointer();
 
-		for (int nCntMat = 0; nCntMat < (int)materialShadow.nNumMat; nCntMat++)
+		for (int nCntMat = 0; nCntMat < (int)m_material[m_nModelID].nNumMat; nCntMat++)
 		{// マテリアル情報の設定
 			D3DMATERIAL9  matD3D = pMat[nCntMat].MatD3D;
 
@@ -294,7 +508,7 @@ void CModel3D::Shadow()
 			pDevice->SetTexture(0, nullptr);
 
 			// モデルパーツの描画
-			materialShadow.pMesh->DrawSubset(nCntMat);
+			m_material[m_nModelID].pMesh->DrawSubset(nCntMat);
 		}
 	}
 

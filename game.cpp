@@ -62,9 +62,6 @@ HRESULT CGame::Init()
 {// マウスの取得
 	CMouse *pMouse = CApplication::GetMouse();
 
-	// 背景モデルの設置
-	CApplication::GetModelManager()->SetModelBG();
-
 	// 重力の値を設定
 	CCalculation::SetGravity(10.0f);
 
@@ -88,7 +85,8 @@ HRESULT CGame::Init()
 	//pSphere->LoadTex(12);
 
 	// プレイヤーの設定
-	m_pPlayer = CPlayer::Create("data/MOTION/motion.txt");
+	m_pPlayer = CPlayer::Create();
+	m_pPlayer->SetMotion("data/MOTION/motion.txt");
 	m_pPlayer->SetPos(D3DXVECTOR3(0.0f, 0.0f, 0.0f));
 
 	// カメラの追従設定(目標 : プレイヤー)

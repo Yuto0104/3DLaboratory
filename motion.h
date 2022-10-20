@@ -69,28 +69,10 @@ public:
 		MyKeySet		*pKeySet;				// キー設定情報
 	}MyMotion;
 
-	//***************************************************************
-	// モデルパーツ構造体を定義
-	//***************************************************************
-	typedef struct
-	{
-		CModel3D::MODEL_MATERIAL		material;				// マテリアル情報
-		D3DXMATRIX						mtxWorld;				// ワールドマトリックス
-		D3DXVECTOR3						posOrigin;				// 元の位置
-		D3DXVECTOR3						rotOrigin;				// 元の向き
-		D3DXVECTOR3						pos;					// 現在の位置
-		D3DXVECTOR3						rot;					// 現在の向き
-		D3DXVECTOR3						posDest;				// 目的の位置
-		D3DXVECTOR3						rotDest;				// 目的の向き
-		int								nIdxModelParent;		// 親モデルのインデックス数
-		int								nType;					// パーツのタイプ
-	}Parts;
-
 	//--------------------------------------------------------------------
 	// コンストラクタとデストラクタ
 	//--------------------------------------------------------------------
 	CMotion(const char *pFileName);
-	/*CMotion(const char * pFileName, CModel3D *pParent);*/
 	~CMotion();
 
 	//--------------------------------------------------------------------
@@ -102,9 +84,6 @@ public:
 	// 終了
 	void Uninit(void);
 
-	// 親の設定
-	void SetParent(CModel3D *pParent) { m_pParent = pParent; }
-
 	// パーツをもとの場所に配置する
 	void SetPartsOrigin();
 
@@ -113,9 +92,6 @@ public:
 
 	// パーツの設定
 	void SetParts(D3DXMATRIX mtxWorld);
-
-	// パーツの色設定
-	void SetParts(D3DXMATRIX mtxWorld, const D3DXCOLOR& col);
 
 	// モーションの再読み込み
 	void ReloadMotion(const char *pFileName);
@@ -162,7 +138,6 @@ private:
 	//--------------------------------------------------------------------
 	CModel3D	*m_pParent;									// 親
 	MyMotion	*m_motion;									// モーション
-	Parts		*m_parts;									// パーツ
 	CParts		**m_pParts;									// パーツ
 	char		m_partsFile[MAX_MODEL_PARTS][0xff];			// パーツのXファイル名
 	int			m_nMaxParts;								// パーツ数

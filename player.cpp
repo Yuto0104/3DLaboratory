@@ -30,7 +30,7 @@
 // Author : 唐﨑結斗
 // 概要 : モーションキャラクター3Dを生成する
 //=============================================================================
-CPlayer * CPlayer::Create(const char *pName)
+CPlayer * CPlayer::Create()
 {
 	// オブジェクトインスタンス
 	CPlayer *pPlayer = nullptr;
@@ -42,7 +42,7 @@ CPlayer * CPlayer::Create(const char *pName)
 	assert(pPlayer != nullptr);
 
 	// 数値の初期化
-	pPlayer->Init(pName);
+	pPlayer->Init();
 
 	// インスタンスを返す
 	return pPlayer;
@@ -77,24 +77,15 @@ CPlayer::~CPlayer()
 // Author : 唐﨑結斗
 // 概要 : 頂点バッファを生成し、メンバ変数の初期値を設定
 //=============================================================================
-HRESULT CPlayer::Init(const char *pName)
+HRESULT CPlayer::Init()
 {
 	// 初期化
-	CMotionModel3D::Init(pName);
-
-	// モーション情報の取得
-	CMotion *pMotion = CMotionModel3D::GetMotion();
+	CMotionModel3D::Init();
 
 	// 移動クラスのメモリ確保
 	m_pMove = new CMove;
 	assert(m_pMove != nullptr);
 	m_pMove->SetMoving(1.0f, 5.0f, 0.5f, 0.1f);
-
-	// モーションの初期設定
-	pMotion->SetMotion(m_EAction);
-
-	// モーション番号の設定
-	pMotion->SetNumMotion(m_EAction);
 
 	 // 影の設定
 	m_pShadow = CShadow::Create(this);
@@ -142,7 +133,8 @@ void CPlayer::Update()
 	D3DXVECTOR3 rot = GetRot();
 
 	// 攻撃
-	if (pKeyboard->GetTrigger(DIK_RETURN))
+	if (pKeyboard->GetTrigger(DIK_RETURN)
+		&& pMotion != nullptr)
 	{
 		pMotion->SetNumMotion(ATTACK_ACTION);
 		m_EAction = ATTACK_ACTION;
@@ -167,7 +159,8 @@ void CPlayer::Update()
 	}
 
 	// ニュートラルモーションの設定
-	if (!pMotion->GetMotion())
+	if (pMotion != nullptr
+		&& !pMotion->GetMotion())
 	{
 		pMotion->SetNumMotion(NEUTRAL_ACTION);
 		m_EAction = NEUTRAL_ACTION;
@@ -284,7 +277,11 @@ D3DXVECTOR3 CPlayer::Move()
 		if (m_EAction == NEUTRAL_ACTION)
 		{
 			m_EAction = MOVE_ACTION;
-			pMotion->SetNumMotion(MOVE_ACTION);
+
+			if (pMotion != nullptr)
+			{
+				pMotion->SetNumMotion(MOVE_ACTION);
+			}
 		}
 	}
 
@@ -295,6 +292,7 @@ D3DXVECTOR3 CPlayer::Move()
 	D3DXVECTOR3 moveing = m_pMove->GetMove();
 
 	if (sqrtf((moveing.x * moveing.x) + (moveing.z * moveing.z)) <= 0.0f
+		&& pMotion != nullptr
 		&& m_EAction == MOVE_ACTION)
 	{
 		m_EAction = NEUTRAL_ACTION;
