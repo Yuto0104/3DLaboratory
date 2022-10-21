@@ -47,6 +47,8 @@ public:
 	void Uninit();
 	void Update();
 	void Draw();
+	void SetStencil(const int nStencilTest, D3DCMPFUNC EStencilFunc);
+	void SetStencilMask(const int nStencilTest, D3DCMPFUNC EStencilFunc);
 	LPDIRECT3DDEVICE9 GetDevice() { return m_pD3DDevice; }
 
 private:

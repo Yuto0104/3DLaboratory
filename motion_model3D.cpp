@@ -139,6 +139,7 @@ void CMotionModel3D::Draw()
 
 	// ワールドマトリックスの設定
 	pDevice->SetTransform(D3DTS_WORLD, &m_mtxWorld);
+
 	if (m_pMotion != nullptr)
 	{// パーツの描画設定
 		m_pMotion->SetParts(m_mtxWorld);

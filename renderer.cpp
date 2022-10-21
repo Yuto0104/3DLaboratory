@@ -169,24 +169,17 @@ void CRenderer::Draw()
 		(D3DCLEAR_STENCIL | D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER),
 		D3DCOLOR_RGBA(0, 0, 0, 0), 1.0f, 0);
 
-	//// ステンシルバッファの書き込みを宣言
-	//m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
-
-	//// Zバッファへの書き込みを禁止する
-	//m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_NEVER);
-
-	//// ステンシルマスク
-	//m_pD3DDevice->SetRenderState(D3DRS_STENCILMASK, 0x000000ff);
-
-	//// ステンシル参照値
-	//m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, 0x01);
-
-	//// ステンシルバッファの書き込みを宣言
-	//m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
-
 	// Direct3Dによる描画の開始
 	if (SUCCEEDED(m_pD3DDevice->BeginScene()))
 	{
+		m_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		m_pD3DDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_pD3DDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+
+		m_pD3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+		m_pD3DDevice->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL);
+		m_pD3DDevice->SetRenderState(D3DRS_ALPHAREF, 0x01);
+
 		// カメラの設定
 		CApplication::GetCamera()->Set();
 
@@ -204,6 +197,69 @@ void CRenderer::Draw()
 
 	// バックバッファとフロントバッファの入れ替え
 	m_pD3DDevice->Present(NULL, NULL, NULL, NULL);
+}
+
+//=============================================================================
+// ステンシルの設定
+// Author : 唐﨑結斗
+// 概要 :　
+//=============================================================================
+void CRenderer::SetStencil(const int nStencilTest, D3DCMPFUNC EStencilFunc)
+{
+	// Zバッファ設定 => 有効
+	m_pD3DDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+
+	// ZBUFFER比較設定変更 => (参照値 <= バッファ値)
+	m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+
+	// ステンシルバッファ => 有効
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
+
+	// ステンシルバッファと比較する参照値設定 => ref
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, nStencilTest);
+
+	// ステンシルバッファの値に対してのマスク設定 => 0xff(全て真)
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILMASK, 0xff);
+
+	// ステンシルテストの比較方法設定 => 
+	//この描画での参照値 >= ステンシルバッファの参照値なら合格
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, EStencilFunc);
+
+	// ステンシルテストの結果に対しての反映設定
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP);
+}
+
+//=============================================================================
+// ステンシルマスクの設定
+// Author : 唐﨑結斗
+// 概要 :　
+//=============================================================================
+void CRenderer::SetStencilMask(const int nStencilTest, D3DCMPFUNC EStencilFunc)
+{
+	// ステンシルバッファ設定
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
+
+	// ステンシルバッファへ描き込む参照値設定
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, nStencilTest);
+
+	// マスク設定
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILMASK, 0xff);
+
+	// ステンシルテスト比較設定
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, EStencilFunc);
+
+	// ステンシルテストのテスト設定
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_REPLACE);
+	m_pD3DDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
+
+	// Zバッファ設定
+	m_pD3DDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+
+	// ZBUFFER比較設定変更
+	m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_NEVER);
 }
 
 #ifdef _DEBUG

@@ -429,9 +429,6 @@ void CApplication::Update()
 		m_nextMode = MODE_NONE;
 	}
 
-	CDebugProc::Print("FPS : %d\n", GetFps());
-	CDebugProc::Print("現在のシーン : %d\n", (int)m_mode);
-
 	m_pKeyboard->Update();
 	m_pMouse->Update();
 	m_pCamera->Update();
@@ -439,6 +436,9 @@ void CApplication::Update()
 	m_pRenderer->Update();
 
 #ifdef _DEBUG
+	CDebugProc::Print("FPS : %d\n", GetFps());
+	CDebugProc::Print("現在のシーン : %d\n", (int)m_mode);
+
 	if (m_pKeyboard->GetTrigger(DIK_F2))
 	{
 		m_bWireFrame ^= 1;

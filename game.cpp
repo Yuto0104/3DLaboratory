@@ -25,6 +25,8 @@
 #include "model3D.h"
 #include "mesh.h"
 #include "sphere.h"
+#include "bg.h"
+#include "test_stencil.h"
 
 //*****************************************************************************
 // 静的メンバ変数宣言
@@ -61,6 +63,10 @@ CGame::~CGame()
 HRESULT CGame::Init()
 {// マウスの取得
 	CMouse *pMouse = CApplication::GetMouse();
+
+	// ステンシルテスト
+	CTestStencil *pTestStencil = CTestStencil::Create();
+	pTestStencil->LoadTex(7);
 
 	// 重力の値を設定
 	CCalculation::SetGravity(10.0f);

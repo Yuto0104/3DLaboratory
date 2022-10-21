@@ -220,7 +220,7 @@ void CMotion::PlayMotion()
 
 		if (motion->nCntKeySet >= motion->nNumKey && motion->bLoop)
 		{// 再生中のキー数カウントがキー数の最大値を超えたとき、そのモーションがループを使用している
-		 // 再生中のキー数カウントを初期化
+			// 再生中のキー数カウントを初期化
 			motion->nCntKeySet = 0;
 
 		}
