@@ -184,6 +184,7 @@
     <ClInclude Include="result.h" />
     <ClInclude Include="scene_mode.h" />
     <ClInclude Include="shadow.h" />
+    <ClInclude Include="shadow_volume.h" />
     <ClInclude Include="sphere.h" />
     <ClInclude Include="test_stencil.h" />
     <ClInclude Include="texture.h" />
@@ -223,6 +224,7 @@
     <ClCompile Include="result.cpp" />
     <ClCompile Include="scene_mode.cpp" />
     <ClCompile Include="shadow.cpp" />
+    <ClCompile Include="shadow_volume.cpp" />
     <ClCompile Include="sphere.cpp" />
     <ClCompile Include="test_stencil.cpp" />
     <ClCompile Include="texture.cpp" />

@@ -121,7 +121,7 @@ void CObject::DrawAll()
 					CRenderer *pRenderer = CApplication::GetRenderer();
 
 					// ステンシルの設定
-					pRenderer->SetStencil(1, D3DCMP_EQUAL);
+					//pRenderer->SetStencil(1, D3DCMP_EQUAL);
 
 					// オブジェクトの描画
 					pObject->Draw();

@@ -27,6 +27,7 @@
 #include "sphere.h"
 #include "bg.h"
 #include "test_stencil.h"
+#include "shadow_volume.h"
 
 //*****************************************************************************
 // 静的メンバ変数宣言
@@ -65,8 +66,8 @@ HRESULT CGame::Init()
 	CMouse *pMouse = CApplication::GetMouse();
 
 	// ステンシルテスト
-	CTestStencil *pTestStencil = CTestStencil::Create();
-	pTestStencil->LoadTex(7);
+	/*CTestStencil *pTestStencil = CTestStencil::Create();
+	pTestStencil->LoadTex(7);*/
 
 	// 重力の値を設定
 	CCalculation::SetGravity(10.0f);
@@ -81,14 +82,14 @@ HRESULT CGame::Init()
 	/*m_pMesh3D->SetWave(1.0f, 300.0f);*/
 	m_pMesh3D->LoadTex(-1);
 
-	//// スカイボックスの設定
-	//CSphere *pSphere = CSphere::Create();
-	//pSphere->SetRot(D3DXVECTOR3(D3DX_PI, 0.0f, 0.0f));
-	//pSphere->SetSize(D3DXVECTOR3(100.0f, 0, 100.0f));
-	//pSphere->SetBlock(CMesh3D::DOUBLE_INT(100, 100));
-	//pSphere->SetRadius(50000.0f);
-	//pSphere->SetSphereRange(D3DXVECTOR2(D3DX_PI * 2.0f, D3DX_PI * -0.5f));
-	//pSphere->LoadTex(12);
+	// スカイボックスの設定
+	CSphere *pSphere = CSphere::Create();
+	pSphere->SetRot(D3DXVECTOR3(D3DX_PI, 0.0f, 0.0f));
+	pSphere->SetSize(D3DXVECTOR3(100.0f, 0, 100.0f));
+	pSphere->SetBlock(CMesh3D::DOUBLE_INT(100, 100));
+	pSphere->SetRadius(50000.0f);
+	pSphere->SetSphereRange(D3DXVECTOR2(D3DX_PI * 2.0f, D3DX_PI * -0.5f));
+	pSphere->LoadTex(12);
 
 	// プレイヤーの設定
 	m_pPlayer = CPlayer::Create();
@@ -100,6 +101,10 @@ HRESULT CGame::Init()
 	
 	// マウスカーソルを消す
 	pMouse->SetShowCursor(false);
+
+	CShadowVolume *pShadowVolume = CShadowVolume::Create();
+	pShadowVolume->SetVtxPos(D3DXVECTOR3(-100.0f, 30.0f, 100.0f), D3DXVECTOR3(100.0f, 30.0f, 100.0f)
+		, D3DXVECTOR3(-100.0f, 30.0f, -100.0f), D3DXVECTOR3(100.0f, 30.0f, -100.0f));
 
 	m_bGame = true;
 
